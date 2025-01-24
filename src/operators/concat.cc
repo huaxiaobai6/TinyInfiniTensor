@@ -10,15 +10,26 @@ ConcatObj::ConcatObj(GraphObj *graph, TensorVec inputs, Tensor output, int _dim)
 }
 
 optional<vector<Shape>> ConcatObj::inferShape(const TensorVec &inputs) {
+    if (inputs.empty()) {
+        return std::nullopt; // 如果没有输入，返回无效值
+    }
+ 
     Shape dims = inputs[0]->getDims();
     auto rank = inputs[0]->getRank();
-
-    // =================================== 作业 ===================================
-    // TODO：修改 dims，返回正确的 concat 后的 shape
-    // REF: https://onnx.ai/onnx/operators/onnx__Concat.html#concat-13
-    // =================================== 作业 ===================================
-
-    return {{dims}};
+ 
+    // 初始化拼接后的形状为第一个输入的形状
+    Shape concatDims = dims;
+ 
+    // 计算拼接维度上的总大小
+    int concatDimSize = 0;
+    for (const auto &input : inputs) {
+        concatDimSize += input->getDims()[dim];
+    }
+ 
+    // 更新拼接维度的大小
+    concatDims[dim] = concatDimSize;
+ 
+    return {{concatDims}};
 }
 
 std::string ConcatObj::toString() const {

@@ -5,12 +5,42 @@ namespace infini {
 
 Shape infer_broadcast(const Shape &A, const Shape &B) {
 
-    // =================================== 作业 ===================================
-    // TODO：对 A 和 B 进行双向广播，返回广播后的形状。
-    // REF: https://github.com/onnx/onnx/blob/main/docs/Broadcasting.md
-    // =================================== 作业 ===================================
-    
-    return {};
+    size_t rankA = A.size();
+    size_t rankB = B.size();
+ 
+    // 确定哪个形状的秩更大
+    Shape broadcastShape;
+ 
+    // 如果 A 的秩较小，在前面添加 1
+    if (rankA < rankB) {
+        broadcastShape.insert(broadcastShape.end(), rankB - rankA, 1);
+        broadcastShape.insert(broadcastShape.end(), A.begin(), A.end());
+    } 
+    // 如果 B 的秩较小，在前面添加 1
+    else if (rankA > rankB) {
+        broadcastShape.insert(broadcastShape.end(), rankA - rankB, 1);
+        broadcastShape.insert(broadcastShape.end(), B.begin(), B.end());
+    } 
+    // 如果秩相等，直接使用 A（或 B）的大小
+    else {
+        broadcastShape = A; // 或 B，因为它们的大小相同
+    }
+ 
+    // 检查兼容性并计算广播后的形状
+    Shape resultShape;
+    for (size_t i = 0; i < std::max(rankA, rankB); ++i) {
+        size_t dimA = (i < rankA) ? A[i] : 1;
+        size_t dimB = (i < rankB) ? B[i] : 1;
+ 
+        // 确保维度兼容
+        IT_ASSERT(dimA == dimB || dimA == 1 || dimB == 1,
+                  "Shapes are not broadcastable: " << A << " and " << B);
+ 
+        // 取最大值作为广播后的维度大小
+        resultShape.push_back(std::max(dimA, dimB));
+    }
+ 
+    return resultShape;
 }
 
 int get_real_axis(const int &axis, const int &rank) {

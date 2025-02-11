@@ -28,19 +28,60 @@ namespace infini
         IT_ASSERT(this->ptr == nullptr);
         // pad the size to the multiple of alignment
         size = this->getAlignedSize(size);
-
-        // =================================== 作业 ===================================
-        // TODO: 设计一个算法来分配内存，返回起始地址偏移量
-        // =================================== 作业 ===================================
-
-        return 0;
+        for (auto it = this->free_blocks.begin(); it != this->free_blocks.end(); it++)
+        {
+            if (it->second >= size)
+            {
+                size_t addr = it->first;
+                size_t unused_mem = it->second - size;
+                this->free_blocks.erase(it);
+                used += size;
+                if (used > peak)
+                {
+                    peak = used;
+                }
+                if (unused_mem > 0)
+                {
+                    this->free_blocks[addr + size] = unused_mem;
+                }
+                return addr;
+            }
+        }
+        //如果没有合适的空闲块，直接分配新的内存，即内存已经分配满了
+        size_t addr = used;
+        used += size;
+        if (used > peak)
+        {
+            peak = used;
+        }
+        return addr;
     }
 
     void Allocator::free(size_t addr, size_t size)
     {
+        //it->first = addr, it->second = size
         IT_ASSERT(this->ptr == nullptr);
         size = getAlignedSize(size);
-
+        //如果释放的内存块正好是最后一个内存块
+        if (addr + size == peak){
+            used -= size;
+            peak -= size;
+            return;
+        }
+        for (auto it = this->free_blocks.begin(); it != this->free_blocks.end(); it++){
+            //释放的内存块在当前内存块后方，将这两个内存块合并
+            if (it->first + it->second == addr){
+                it->second += size;
+                return;
+            }
+            // 此时释放的内存块位于it内存块的前方
+            if (it->first == addr + size){
+                free_blocks[addr] = size + it->second;
+                free_blocks.erase(it);
+                return;
+            }
+        }
+        free_blocks[addr] = size;
         // =================================== 作业 ===================================
         // TODO: 设计一个算法来回收内存
         // =================================== 作业 ===================================
